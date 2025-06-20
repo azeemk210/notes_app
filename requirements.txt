@@ -1,0 +1,6 @@
+#venv/Scripts/activate
+fastapi[all] 
+tortoise-orm 
+pydantic 
+pytest
+aiofiles
