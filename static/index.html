@@ -1,30 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Notes App</title>
   <style>
-    body { font-family: Arial; margin: 2rem; }
-    #notes { margin-top: 1rem; }
-    .note { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
-    input, textarea { width: 50%; margin: 0.5rem 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 5px;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 1rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .notes-list {
+      margin-top: 2rem;
+    }
+
+    .note {
+      background: #fafafa;
+      border-left: 4px solid #007bff;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .note button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Notes App</h1>
+  <div class="container">
+    <h1>📝 My Notes</h1>
 
-<div>
-    <input type="text" id="title" placeholder="Note Title">
-    <br>
-    <textarea id="content" rows="4" placeholder="Note Content"></textarea>
-    <br>
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input type="text" id="title" placeholder="Enter note title" />
+    </div>
+
+    <div class="form-group">
+      <label for="content">Content</label>
+      <textarea id="content" rows="4" placeholder="Enter note content"></textarea>
+    </div>
+
     <button onclick="addNote()">Add Note</button>
-</div>
 
-<div id="notes" style="width: 50%;"></div>
+    <div class="notes-list" id="notes"></div>
+  </div>
 
   <script>
-    const API_URL = "/api/notes";
+    const API_URL = "/api/notes/";
 
     async function fetchNotes() {
       const res = await fetch(API_URL);
@@ -33,55 +112,47 @@
       notesDiv.innerHTML = "";
 
       notes.forEach(note => {
-        notesDiv.innerHTML += `
-          <div class="note">
-            <strong>${note.title}</strong><br>
-            <p>${note.content}</p>
-            <button onclick="deleteNote(${note.id})">Delete</button>
-            <button onclick="editNote(${note.id})">Edit</button>
-          </div>
+        const noteEl = document.createElement("div");
+        noteEl.className = "note";
+        noteEl.innerHTML = `
+          <strong>${note.title}</strong><br/>
+          <p>${note.content}</p>
+          <button onclick="deleteNote(${note.id})">Delete</button>
         `;
+        notesDiv.appendChild(noteEl);
       });
     }
 
     async function addNote() {
-      const title = document.getElementById("title").value;
-      const content = document.getElementById("content").value;
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
 
-      await fetch(API_URL, {
+      if (!title || !content) {
+        alert("Please fill in both title and content.");
+        return;
+      }
+
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content })
       });
 
-      document.getElementById("title").value = "";
-      document.getElementById("content").value = "";
-      fetchNotes();
-    }
-
-    async function deleteNote(id) {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      fetchNotes();
-    }
-
-    async function editNote(id) {
-      const title = prompt("Enter new title:");
-      const content = prompt("Enter new content:");
-
-      if (title && content) {
-        await fetch(`${API_URL}/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content })
-        });
+      if (res.ok) {
+        document.getElementById("title").value = "";
+        document.getElementById("content").value = "";
         fetchNotes();
+      } else {
+        alert("Failed to add note.");
       }
     }
 
+    async function deleteNote(id) {
+      await fetch(`${API_URL}${id}`, { method: "DELETE" });
+      fetchNotes();
+    }
 
-
-    // Load notes on page load
-    fetchNotes();
+    window.onload = fetchNotes;
   </script>
 </body>
 </html>
