@@ -76,6 +76,10 @@
       background: #dc3545;
     }
 
+    .hidden {
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .container {
         padding: 1rem;
@@ -87,57 +91,136 @@
   <div class="container">
     <h1>📝 My Notes</h1>
 
-    <div class="form-group">
-      <label for="title">Title</label>
-      <input type="text" id="title" placeholder="Enter note title" />
+    <!-- Login Form -->
+    <div id="login-section">
+      <div class="form-group">
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" placeholder="Enter your username" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter your password" />
+      </div>
+      <button onclick="login()">Login</button>
+      <button onclick="showRegister()" style="background:#28a745;margin-left:10px;">Register</button>
     </div>
 
-    <div class="form-group">
-      <label for="content">Content</label>
-      <textarea id="content" rows="4" placeholder="Enter note content"></textarea>
+    <!-- Register Form -->
+    <div id="register-section" class="hidden">
+      <div class="form-group">
+        <label for="register-username">Username</label>
+        <input type="text" id="register-username" placeholder="Choose a username" />
+      </div>
+      <div class="form-group">
+        <label for="register-email">Email</label>
+        <input type="email" id="register-email" placeholder="Enter your email" />
+      </div>
+      <div class="form-group">
+        <label for="register-password">Password</label>
+        <input type="password" id="register-password" placeholder="Choose a password" />
+      </div>
+      <button onclick="register()">Register</button>
+      <button onclick="showLogin()" style="background:#6c757d;margin-left:10px;">Back to Login</button>
     </div>
 
-    <button onclick="addNote()">Add Note</button>
-
-    <div class="notes-list" id="notes"></div>
+    <!-- Notes Section -->
+    <div id="notes-section" class="hidden">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" placeholder="Enter note title" />
+      </div>
+      <div class="form-group">
+        <label for="content">Content</label>
+        <textarea id="content" rows="4" placeholder="Enter note content"></textarea>
+      </div>
+      <button onclick="addNote()">Add Note</button>
+      <button onclick="logout()" style="background:#6c757d;margin-left:10px;">Logout</button>
+      <div class="notes-list" id="notes"></div>
+    </div>
   </div>
 
   <script>
-    const API_URL = "/api/notes/";
+    const API_BASE = "/api/notes";
+    let userId = localStorage.getItem("user_id");
+
+    function showRegister() {
+      document.getElementById("login-section").classList.add("hidden");
+      document.getElementById("register-section").classList.remove("hidden");
+      document.getElementById("notes-section").classList.add("hidden");
+    }
+
+    function showLogin() {
+      document.getElementById("login-section").classList.remove("hidden");
+      document.getElementById("register-section").classList.add("hidden");
+      document.getElementById("notes-section").classList.add("hidden");
+    }
+
+    function showNotes() {
+      document.getElementById("login-section").classList.add("hidden");
+      document.getElementById("notes-section").classList.remove("hidden");
+      fetchNotes();
+    }
+
+    async function login() {
+      const username = document.getElementById("login-username").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+      if (!username || !password) {
+        alert("Please enter both username and password.");
+        return;
+      }
+      const res = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("user_id", data.user_id);
+        userId = data.user_id;
+        showNotes();
+      } else {
+        alert("Login failed. Please check your credentials.");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("user_id");
+      userId = null;
+      showLogin();
+    }
 
     async function fetchNotes() {
-      const res = await fetch(API_URL);
-      const notes = await res.json();
-      const notesDiv = document.getElementById("notes");
-      notesDiv.innerHTML = "";
-
-      notes.forEach(note => {
-        const noteEl = document.createElement("div");
-        noteEl.className = "note";
-        noteEl.innerHTML = `
-          <strong>${note.title}</strong><br/>
-          <p>${note.content}</p>
-          <button onclick="deleteNote(${note.id})">Delete</button>
-        `;
-        notesDiv.appendChild(noteEl);
-      });
+      if (!userId) return;
+      const res = await fetch(`${API_BASE}/users/${userId}/notes`);
+      if (res.ok) {
+        const notes = await res.json();
+        const notesDiv = document.getElementById("notes");
+        notesDiv.innerHTML = "";
+        notes.forEach(note => {
+          const noteEl = document.createElement("div");
+          noteEl.className = "note";
+          noteEl.innerHTML = `
+            <strong>${note.title}</strong><br/>
+            <p>${note.content}</p>
+            <button onclick="deleteNote(${note.id})">Delete</button>
+          `;
+          notesDiv.appendChild(noteEl);
+        });
+      }
     }
 
     async function addNote() {
       const title = document.getElementById("title").value.trim();
       const content = document.getElementById("content").value.trim();
-
       if (!title || !content) {
         alert("Please fill in both title and content.");
         return;
       }
-
-      const res = await fetch(API_URL, {
+      const res = await fetch(`${API_BASE}/users/${userId}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content })
       });
-
       if (res.ok) {
         document.getElementById("title").value = "";
         document.getElementById("content").value = "";
@@ -148,11 +231,41 @@
     }
 
     async function deleteNote(id) {
-      await fetch(`${API_URL}${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/users/${userId}/notes/${id}`, { method: "DELETE" });
       fetchNotes();
     }
 
-    window.onload = fetchNotes;
+    async function register() {
+      const username = document.getElementById("register-username").value.trim();
+      const email = document.getElementById("register-email").value.trim();
+      const password = document.getElementById("register-password").value.trim();
+      if (!username || !email || !password) {
+        alert("Please fill in all fields.");
+        return;
+      }
+      const res = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password })
+      });
+      if (res.ok) {
+        alert("Registration successful! Please log in.");
+        showLogin();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || "Registration failed.");
+      }
+    }
+
+    // On page load
+    window.onload = function() {
+      userId = localStorage.getItem("user_id");
+      if (userId) {
+        showNotes();
+      } else {
+        showLogin();
+      }
+    };
   </script>
 </body>
 </html>

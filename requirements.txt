@@ -4,3 +4,15 @@ tortoise-orm
 pydantic 
 pytest
 aiofiles
+passlib[bcrypt]
+
+
+"username": "azeemkhan",
+  "email": "khanazeem@gmail.com",
+  "password": "password"
+
+  	
+
+shazia1
+password
+4
