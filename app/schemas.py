@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from datetime import datetime
 
 class NoteIn(BaseModel):
     title: str = Field(..., description="Title of the note")
@@ -9,6 +10,8 @@ class NoteIn(BaseModel):
 class NoteOut(NoteIn):
     id: int = Field(..., description="Unique identifier of the note")
     status: str = Field("active", description="Status of the note (e.g., active, archived)")
+    created_at: datetime = Field(..., description="Timestamp for when the note was created")
+    updated_at: datetime = Field(..., description="Timestamp for when the note was last updated")
 
 class NoteUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Title of the note")
