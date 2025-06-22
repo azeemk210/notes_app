@@ -314,19 +314,30 @@
     }
 
     window.onload = function () {
-      const firstVisit = localStorage.getItem("first_visit");
+  const firstVisit = localStorage.getItem("first_visit");
 
-      if (!firstVisit) {
-        localStorage.setItem("first_visit", "true");
-        localStorage.removeItem("user_id");
-        userId = null;
-        showLogin();
-      } else {
-        userId = localStorage.getItem("user_id");
-        if (userId) showNotes();
-        else showLogin();
-      }
-    };
+  if (!firstVisit) {
+    // First time visiting — force login
+    localStorage.setItem("first_visit", "true"); // mark future visits
+    localStorage.removeItem("user_id");          // log out any session
+    userId = null;
+    showLogin();
+  } else {
+    // Not first visit — check if logged in
+    userId = localStorage.getItem("user_id");
+    if (userId) {
+      showNotes();  // auto-login
+    } else {
+      showLogin();  // not logged in
+    }
+  }
+};
+    // Ensure the user is logged out on page load if first visit
+    if (!localStorage.getItem("first_visit")) {
+      localStorage.removeItem("user_id");
+      userId = null;
+      showLogin();
+    }
 
   </script>
 </body>
