@@ -248,18 +248,11 @@
       else alert("Failed to update status.");
     }
     window.onload = function () {
-      const firstVisit = localStorage.getItem("first_visit");
-      if (!firstVisit) {
-        localStorage.setItem("first_visit", "true");
-        localStorage.removeItem("user_id");
-        userId = null;
-        showLogin();
-      } else {
-        userId = localStorage.getItem("user_id");
-        if (userId) showNotes();
-        else showLogin();
-      }
-    };
+  showLogin(); // Always show login screen on landing
+  localStorage.removeItem("user_id"); // Clear stored session if any
+  userId = null;
+};
+
   </script>
 </body>
 </html>
