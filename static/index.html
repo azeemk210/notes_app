@@ -313,9 +313,9 @@
       }
     }
 
-    // Show login only on first page open
-    window.onload = function() {
+    window.onload = function () {
       const firstVisit = localStorage.getItem("first_visit");
+
       if (!firstVisit) {
         localStorage.setItem("first_visit", "true");
         localStorage.removeItem("user_id");
@@ -327,6 +327,7 @@
         else showLogin();
       }
     };
+
   </script>
 </body>
 </html>
