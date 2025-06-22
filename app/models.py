@@ -11,6 +11,8 @@ class Note(Model):
     id = IntField(pk=True)
     title = CharField(max_length=255)
     content = TextField()
+    status = CharField(max_length=50, default="active")  # Optional status field
     user = ForeignKeyField("models.User", related_name="notes")
     
+   
 

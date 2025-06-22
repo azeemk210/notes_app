@@ -64,16 +64,9 @@
       background: #fafafa;
       border-left: 4px solid #007bff;
       padding: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       border-radius: 4px;
       position: relative;
-    }
-
-    .note button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #dc3545;
     }
 
     .hidden {
@@ -196,14 +189,28 @@
         const notes = await res.json();
         const notesDiv = document.getElementById("notes");
         notesDiv.innerHTML = "";
+
         notes.forEach(note => {
           const noteEl = document.createElement("div");
           noteEl.className = "note";
+
           noteEl.innerHTML = `
-            <strong>${note.title}</strong><br/>
-            <p>${note.content}</p>
-            <button onclick="deleteNote(${note.id})">Delete</button>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <strong>${note.title}</strong>
+                <p>${note.content}</p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 5px;">
+                <button onclick="editNote(${note.id}, '${note.title.replace(/'/g, "\\'").replace(/"/g, "&quot;")}', '${note.content.replace(/'/g, "\\'").replace(/"/g, "&quot;")}')" style="background:#ffc107;">Edit</button>
+                <button onclick="deleteNote(${note.id})" style="background:#dc3545;">Delete</button>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <p style="color:${note.status === 'done' ? 'green' : 'gray'};"><em>Status: ${note.status}</em></p>
+              ${note.status !== 'done' ? `<button onclick="markAsDone(${note.id})" style="background:#17a2b8;">Mark as Done</button>` : ''}
+            </div>
           `;
+
           notesDiv.appendChild(noteEl);
         });
       }
@@ -235,6 +242,35 @@
       fetchNotes();
     }
 
+    function editNote(id, title, content) {
+      document.getElementById("title").value = title;
+      document.getElementById("content").value = content;
+      const addBtn = document.querySelector('button[onclick="addNote()"]');
+      addBtn.textContent = "Save Edit";
+      addBtn.onclick = async function() {
+        const newTitle = document.getElementById("title").value.trim();
+        const newContent = document.getElementById("content").value.trim();
+        if (!newTitle || !newContent) {
+          alert("Please fill in both title and content.");
+          return;
+        }
+        const res = await fetch(`${API_BASE}/users/${userId}/notes/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: newTitle, content: newContent })
+        });
+        if (res.ok) {
+          document.getElementById("title").value = "";
+          document.getElementById("content").value = "";
+          addBtn.textContent = "Add Note";
+          addBtn.onclick = addNote;
+          fetchNotes();
+        } else {
+          alert("Failed to update note.");
+        }
+      };
+    }
+
     async function register() {
       const username = document.getElementById("register-username").value.trim();
       const email = document.getElementById("register-email").value.trim();
@@ -243,6 +279,12 @@
         alert("Please fill in all fields.");
         return;
       }
+      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+      if (!passwordPattern.test(password)) {
+        alert("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -257,13 +299,32 @@
       }
     }
 
-    // On page load
-    window.onload = function() {
-      userId = localStorage.getItem("user_id");
-      if (userId) {
-        showNotes();
+    async function markAsDone(id) {
+      const res = await fetch(`${API_BASE}/users/${userId}/notes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" })
+      });
+
+      if (res.ok) {
+        fetchNotes();
       } else {
+        alert("Failed to update status.");
+      }
+    }
+
+    // Show login only on first page open
+    window.onload = function() {
+      const firstVisit = localStorage.getItem("first_visit");
+      if (!firstVisit) {
+        localStorage.setItem("first_visit", "true");
+        localStorage.removeItem("user_id");
+        userId = null;
         showLogin();
+      } else {
+        userId = localStorage.getItem("user_id");
+        if (userId) showNotes();
+        else showLogin();
       }
     };
   </script>
