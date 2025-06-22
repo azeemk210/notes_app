@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from app.models import Note, User
-from app.schemas import NoteIn, NoteOut, NoteUpdate, UserCreate, UserLogin
+from app.schemas import NoteIn, NoteOut, NoteUpdate, UserCreate, UserLogin, UserOut
 from typing import List
 from app.security import hash_password, verify_password
 
-router = APIRouter(prefix="/api/notes", tags=["notes"])
+router = APIRouter(prefix="/api", tags=["notes"])
 
 @router.post("/register")
 async def register_user(user_in: UserCreate):
@@ -20,6 +20,11 @@ async def register_user(user_in: UserCreate):
     )
     return {"message": "User registered successfully", "user_id": user.id}
 
+@router.get("/users", response_model=List[UserOut])
+async def get_All_users():
+    users = await User.all()
+    return users
+
 @router.post("/login")
 async def login_user(user_in: UserLogin):
     user = await User.get_or_none(username=user_in.username)
@@ -27,9 +32,6 @@ async def login_user(user_in: UserLogin):
         raise HTTPException(status_code=400, detail="Invalid username or password")
     return {"message": "Login successful", "user_id": user.id}
 
-@router.get("/users", response_model=List[UserCreate])
-async def get_users():
-    return await User.all()
 
 @router.get("/users/{user_id}/notes", response_model=List[NoteOut])
 async def get_user_notes(user_id: int):

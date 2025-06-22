@@ -72,7 +72,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>📝 My Notes</h1>
+    <h1>🗒️ My Notes</h1>
     <div id="login-section">
       <div class="form-group">
         <label for="login-username">Username</label>
@@ -116,7 +116,7 @@
     </div>
   </div>
   <script>
-    const API_BASE = "/api/notes";
+    const API_BASE = "/api";
     let userId = localStorage.getItem("user_id");
 
     function showRegister() {
@@ -161,6 +161,7 @@
       const notes = await res.json();
       const notesDiv = document.getElementById("notes");
       notesDiv.innerHTML = "";
+      notes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       notes.forEach(note => {
         const noteEl = document.createElement("div");
         noteEl.className = "note";
@@ -173,7 +174,7 @@
           </small><br/>
           <button onclick="deleteNote(${note.id})">Delete</button>
           <button onclick="editNote(${note.id}, \`${note.title}\`, \`${note.content}\`)">Edit</button>
-          <button onclick="markDone(${note.id})">Mark as Done</button>
+          ${note.status === 'active' ? `<button onclick="markAsDone(${note.id})">Mark as Done</button>` : '<em>✔ Done</em>'}
         `;
         notesDiv.appendChild(noteEl);
       });
@@ -248,11 +249,10 @@
       else alert("Failed to update status.");
     }
     window.onload = function () {
-  showLogin(); // Always show login screen on landing
-  localStorage.removeItem("user_id"); // Clear stored session if any
-  userId = null;
-};
-
+      showLogin();
+      localStorage.removeItem("user_id");
+      userId = null;
+    };
   </script>
 </body>
 </html>
